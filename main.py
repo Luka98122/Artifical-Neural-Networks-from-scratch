@@ -4,11 +4,17 @@ import matplotlib
 
 class Neuron():
     def __init__(self, inputs,weights,bias):
+        """
+        Below is a manual implementation of the dot product function,
+        which can be performed with np.dot(a,b).
+        
         output = 0
         for i in range(len(inputs)):
             output+=inputs[i]*weights[i]
-        
         output += bias
+        """
+        
+        output=np.dot(weights,inputs)+bias
         self.output = output
 
 # Constants   
@@ -34,4 +40,7 @@ for i in range(3):
     neurons.append(Neuron(inputs,weights[i],biases[i]))
     layer_outputs.append(neurons[-1].output)
 
-print(layer_outputs)
+output = np.dot(weights,inputs)+biases
+print(f"Direct np.dot(): {output}")
+
+print(f"Neuron output: {layer_outputs}")
