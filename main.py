@@ -2,11 +2,12 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import nnfs
+import math
 nnfs.init()
 
 np.random.seed(0)
 
-
+# Used for sample data, loosely coppied from
 def create_data(points, classes): # Creates a dataset of spiral shaped clusters
     X = np.zeros((points * classes, 2))
     y = np.zeros(points * classes, dtype='uint8')
@@ -35,43 +36,30 @@ class Neuron_Layer():
         self.output = np.dot(inputs,self.weights)+self.biases
         pass
     
+    
 class Activation_ReLU():
     def forward(self,inputs):
         self.output = np.maximum(0,inputs)
 
-"""
-# Constants   
-X = [[1, 2, 3, 2.5], 
-     [2.0,5.0, -1.0, 2.0],
-     [-1.5,2.7,3.3,-0.8]]
-layer1 = Neuron_Layer(4,5) 
-layer2 = Neuron_Layer(5,2)
+class Activation_Softmax():
+    def forward(self,inputs):
+        exps = np.exp(inputs - np.max(inputs,axis=1,keepdims=True))
+        normalised = exps / np.sum(exps,axis=1,keepdims=True)
+        self.output = normalised
 
-# Input shape of layer2 has to match the output shape of layer1
-
-layer1.forward(X)
-print(layer1.output)
-
-layer2.forward(layer1.output)
-print(layer2.output)
-"""
 
 X,Y = create_data(100,3)
 
+layer1 = Neuron_Layer(2,3)
 activation1 = Activation_ReLU()
-activation2 = Activation_ReLU()
-activation3 = Activation_ReLU()
 
-layer1 = Neuron_Layer(2,16)
+layer2 = Neuron_Layer(3,3) # Output layer
+activation2 = Activation_Softmax()
+
 layer1.forward(X)
 activation1.forward(layer1.output)
 
-layer2 = Neuron_Layer(16,16)
 layer2.forward(activation1.output)
 activation2.forward(layer2.output)
 
-layer3 = Neuron_Layer(16,3)
-layer3.forward(activation2.output)
-activation3.forward(layer3.output)
-
-print(activation3.output)
+print(activation2.output[:5])
