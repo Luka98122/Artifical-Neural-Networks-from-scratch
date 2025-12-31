@@ -63,3 +63,6 @@ layer2.forward(activation1.output)
 activation2.forward(layer2.output)
 
 print(activation2.output[:5])
+
+# Loss can be implemented as -log(softmax_output[x]), where x is the target index of the
+# correct classification.
