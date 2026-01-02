@@ -1,9 +1,8 @@
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-import nnfs
 import math
-nnfs.init()
+
 
 np.random.seed(0)
 
