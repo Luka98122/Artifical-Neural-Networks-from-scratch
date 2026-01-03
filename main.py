@@ -94,3 +94,4 @@ print(activation2.output[:5])
 loss_function = Loss_CategoricalCrossentropy()
 loss = loss_function.calculate(activation2.output,Y)
 print("Loss:", loss)
+
