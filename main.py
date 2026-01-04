@@ -5,7 +5,7 @@ import math
 
 
 np.random.seed(0)
-# TODO: Re-read pages 205-220.
+# TODO: Re-read pages 205-221.
 # Used for sample data, loosely coppied from
 def create_data(points, classes): # Creates a dataset of spiral shaped clusters
     X = np.zeros((points * classes, 2))
@@ -37,14 +37,15 @@ class Neuron_Layer():
         pass
     
     def backward(self,dvalues):
-        dweights = np.dot(self.inputs.T, dvalues)
-        dbiases = np.sum(dvalues, axis=0, keepdims=True)
+        self.dweights = np.dot(self.inputs.T, dvalues)
+        self.dbiases = np.sum(dvalues, axis=0, keepdims=True)
         self.dinputs = np.dot(dvalues, self.weights.T)
 
     
 class Activation_ReLU():
     def forward(self,inputs):
         self.output = np.maximum(0,inputs)
+        self.inputs = inputs
         
     def backward(self,dvalues):
         self.dinputs = dvalues.copy()
@@ -57,10 +58,27 @@ class Activation_Softmax():
         exps = np.exp(inputs - np.max(inputs,axis=1,keepdims=True))
         normalised = exps / np.sum(exps,axis=1,keepdims=True)
         self.output = normalised
+    
+    def backward(self,dvalues): 
+        # TODO Reread 216-225
+        self.dinputs = np.empty_like(dvalues)
+        
+        for index, (single_output,single_dvalues) in enumerate(zip(self.output,dvalues)):
+            # Flatten output array
+            single_output = single_output.reshape(-1,1)
+            jacobian_matrix = np.diagflat(single_output) - \
+                              np.dot(single_output, single_output.T)
+                              
+            # Calculate sample-wise gradient.
+            self.dinputs[index] = np.dot(jacobian_matrix, single_dvalues)
+
+# TODO: Re-read pages 205-232 and summarise and explain them.
+
 
 # Loss can be implemented as -log(softmax_output[x]), where x is the target index of the
 # correct classification.     
 class Loss:
+    
     def calculate(self,output,y):
         sample_losses = self.forward(output,y)
         data_loss = np.mean(sample_losses)
@@ -87,32 +105,87 @@ class Loss_CategoricalCrossentropy(Loss):
             y_true = np.eye(labels)[y_true]
         self.dinputs = -y_true/dvalues # Calculate gradient
         self.dinputs = self.dinputs/samples # Normalize gradient
+        
+class Activation_Softmax_Loss_CategoricalCrossentropy():
     
+    def __init__(self):
+        self.activation = Activation_Softmax()
+        self.loss = Loss_CategoricalCrossentropy()
+        
+    def forward(self,inputs,y_true):
+        self.activation.forward(inputs)
+        self.output = self.activation.output
+        return self.loss.calculate(self.output,y_true)
+    
+    def backward(self,dvalues, y_true):
+        samples = len(dvalues)
+        
+        if len(y_true.shape)==2: # If one hot, turn it into sparse (discrete)
+            y_true = np.argmax(y_true,axis=1)
+        self.dinputs = dvalues.copy()
+        self.dinputs[range(samples),y_true] -=1
+        self.dinputs = self.dinputs / samples    
 
 X,Y = create_data(100,3)
+
+loss_activation = Activation_Softmax_Loss_CategoricalCrossentropy()
 
 layer1 = Neuron_Layer(2,3)
 activation1 = Activation_ReLU()
 
 layer2 = Neuron_Layer(3,3) # Output layer
-activation2 = Activation_Softmax()
 
 layer1.forward(X)
 activation1.forward(layer1.output)
 
 layer2.forward(activation1.output)
-activation2.forward(layer2.output)
+loss = loss_activation.forward(layer2.output, Y)
 
-predictions = np.argmax(activation2.output,axis=1)
+predictions = np.argmax(loss_activation.output,axis=1)
+
+loss_activation.backward(loss_activation.output, Y)
+layer2.backward(loss_activation.dinputs)
+activation1.backward(layer2.dinputs)
+layer1.backward(activation1.dinputs)
+
+print(layer1.dweights)
+print(layer1.dbiases)
+print(layer2.dweights)
+print(layer2.dbiases)
+
 
 if len(Y.shape)==2:
     Y = np.argmax(Y,axis=1)
 accuracy = np.mean(predictions==Y)
 print(accuracy)
 
-print(activation2.output[:5])
+"""
+Two ways of doing the same thing
+softmax_loss = Activation_Softmax_Loss_CategoricalCrossentropy()
+softmax_loss.backward(activation2.output, Y)
+dvalues1 = softmax_loss.dinputs
 
-loss_function = Loss_CategoricalCrossentropy()
-loss = loss_function.calculate(activation2.output,Y)
-print("Loss:", loss)
 
+# --- Separate Softmax + Loss (full Jacobian) ---
+activation = Activation_Softmax()
+activation.output = activation2.output
+
+loss = Loss_CategoricalCrossentropy()
+loss.backward(activation2.output, Y)
+activation.backward(loss.dinputs)
+
+dvalues2 = activation.dinputs
+
+
+# --- Compare ---
+print('Combined (dL/dz):')
+print(dvalues1[:5])
+
+print('Separate (dL/dz):')
+print(dvalues2[:5])
+
+print('Max abs diff:',
+      np.max(np.abs(dvalues1 - dvalues2)))
+"""
+
+# TODO: Reformat to jupyter notebook.
