@@ -5,7 +5,7 @@ import math
 
 
 np.random.seed(0)
-
+# TODO: Re-read pages 205-220.
 # Used for sample data, loosely coppied from
 def create_data(points, classes): # Creates a dataset of spiral shaped clusters
     X = np.zeros((points * classes, 2))
@@ -32,13 +32,25 @@ class Neuron_Layer():
         pass
 
     def forward(self,inputs):
+        self.inputs = inputs
         self.output = np.dot(inputs,self.weights)+self.biases
         pass
     
+    def backward(self,dvalues):
+        dweights = np.dot(self.inputs.T, dvalues)
+        dbiases = np.sum(dvalues, axis=0, keepdims=True)
+        self.dinputs = np.dot(dvalues, self.weights.T)
+
     
 class Activation_ReLU():
     def forward(self,inputs):
         self.output = np.maximum(0,inputs)
+        
+    def backward(self,dvalues):
+        self.dinputs = dvalues.copy()
+        # Zero gradient where input values were negative
+        self.dinputs[self.inputs <= 0] = 0
+
 
 class Activation_Softmax():
     def forward(self,inputs):
@@ -59,13 +71,22 @@ class Loss_CategoricalCrossentropy(Loss):
         samples = len(y_pred)
         y_pred_clipped = np.clip(y_pred,1e-7,1-1e-7)
         
-        if len(y_true.shape)==1:
+        if len(y_true.shape)==1: # Labels are class indicies
             correct_confidences = y_pred_clipped[range(samples),y_true]
-        elif len(y_true.shape)==2:
+        elif len(y_true.shape)==2: # One hot encoding
             correct_confidences = np.sum(y_pred_clipped*y_true,axis=1)
         
         loss = -np.log(correct_confidences)
         return loss
+    
+    def backward(self, dvalues, y_true):
+        samples = len(dvalues)
+        labels = len(dvalues[0])
+        if len(y_true.shape)==1:
+            # If it is sparse, convert to one-hot
+            y_true = np.eye(labels)[y_true]
+        self.dinputs = -y_true/dvalues # Calculate gradient
+        self.dinputs = self.dinputs/samples # Normalize gradient
     
 
 X,Y = create_data(100,3)
