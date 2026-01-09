@@ -18,8 +18,13 @@ The project follows and expands upon the *Neural Networks from Scratch* tutorial
 - Dense layers, activation functions, and loss functions
 - NumPy-only implementation (no TensorFlow / PyTorch)
 ---
-
+# Implementations
+Below is an implementation of my neural network on a spiral dataset, where it must classify a collection of points into their respective spirals.
 ![Spiral Classification Demo](./demo/spiralClassification.png)
+
+
+Below is an implementation of my neural network on the MNIST dataset, where it reached 95.84% accuraccy on the validation dataset.
+![Spiral Classification Demo](./demo/MNISTClassification.png)
 
 ---
 
